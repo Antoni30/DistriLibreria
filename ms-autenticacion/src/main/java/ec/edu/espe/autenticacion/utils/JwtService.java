@@ -4,11 +4,15 @@ import ec.edu.espe.autenticacion.entity.AuthenticatorUser;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,27 +21,49 @@ import java.util.function.Function;
 @Slf4j
 @Service
 public class JwtService {
-    private final String SECRET_KEY = "soyUnaClave123456789123456789123456789"; // mínimo 32 caracteres
+    @Value("${jwt.secret}")
+    private  String SECRET_KEY; // mínimo 32 caracteres
 
     private final long EXPIRATION = 1000 * 60 * 60; // 1 hora
 
     private Key getSigningKey() {
+
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
 
-    public String generateToken(AuthenticatorUser authenticatorUser) {
+    private String hashSha256ToBase64(String input) {
+        try {
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            byte[] hash = sha256.digest(input.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            throw new RuntimeException("Error generando hash SHA-256", e);
+        }
+    }
+    public String getSecretKey() {
+        return SECRET_KEY;
+    }
+
+    public String generateToken(AuthenticatorUser authenticatorUser) throws Exception {
         Map<String, Object> claims = new HashMap<>();
-        log.info(authenticatorUser.getID_ROLE().getNombreRole());
-        claims.put("role", "ROLE_" + authenticatorUser.getID_ROLE().getNombreRole().toUpperCase());
+        String encryptedRole = AESUtil.encrypt(
+                "ROLE_" + authenticatorUser.getID_ROLE().getNombreRole().toUpperCase(),
+                SECRET_KEY
+        );
+
+
+
+        claims.put("role", encryptedRole);
 
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(authenticatorUser.getID_CEDULA_USUARIO())
+                .setSubject(AESUtil.encrypt(authenticatorUser.getID_CEDULA_USUARIO(), SECRET_KEY))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     public String extractRole(String token) {
         return extractAllClaims(token).get("role", String.class);

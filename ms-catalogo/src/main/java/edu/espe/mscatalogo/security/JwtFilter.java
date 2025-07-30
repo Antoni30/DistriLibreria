@@ -1,7 +1,8 @@
-package ec.edu.espe.autenticacion.security;
+package edu.espe.mscatalogo.security;
 
-import ec.edu.espe.autenticacion.utils.AESUtil;
-import ec.edu.espe.autenticacion.utils.JwtService;
+
+import edu.espe.mscatalogo.utils.AESUtil;
+import edu.espe.mscatalogo.utils.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -14,8 +15,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -29,7 +30,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
 
 
-    private AESUtil  aesUtil;
+    private AESUtil aesUtil;
 
     @Autowired
     public JwtFilter(JwtService jwtService) {
