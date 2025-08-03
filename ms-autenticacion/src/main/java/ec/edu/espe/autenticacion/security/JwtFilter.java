@@ -40,8 +40,10 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        // Obtiene la ruta de la petición actual
         String path = request.getRequestURI();
         AntPathMatcher pathMatcher = new AntPathMatcher();
+        // Lista de rutas excluidas de la autenticación (por ejemplo, login, swagger, etc.)
         List<String> excludedPaths = List.of(
                 "/auth/**",
                 "/swagger-ui/**",
@@ -49,6 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 "/actuator/**"
         );
 
+        // Verifica si la ruta actual está excluida de la autenticación
         boolean isExcluded = excludedPaths.stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
 

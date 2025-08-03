@@ -1,86 +1,233 @@
 version: '3.8'
 
 services:
-  cockroach1:
+  # Base de datos CockroachDB
+  cockroachdb:
     image: cockroachdb/cockroach:latest
-    container_name: crdb-node1
-    hostname: crdb-node1
+    container_name: cockroachdb
+    hostname: cockroachdb
     ports:
       - "26257:26257"  # SQL
       - "8080:8080"    # Admin UI
     volumes:
-      - cockroach1:/cockroach/cockroach-data
-    command: start --insecure --store=node1 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080 --join=crdb-node1:26257,crdb-node2:26257,crdb-node3:26257 --advertise-addr=crdb-node1:26257
+      - cockroach_data:/cockroach/cockroach-data
+    command: start-single-node --insecure --store=node1 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
     networks:
-      - cockroach-network
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-  cockroach2:
-    image: cockroachdb/cockroach:latest
-    container_name: crdb-node2
-    hostname: crdb-node2
+  # RabbitMQ para mensajería
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
     ports:
-      - "26258:26257"  # SQL
-      - "8081:8080"    # Admin UI
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
     volumes:
-      - cockroach2:/cockroach/cockroach-data
-    command: start --insecure --store=node2 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080 --join=crdb-node1:26257,crdb-node2:26257,crdb-node3:26257 --advertise-addr=crdb-node2:26257
-    depends_on:
-      - cockroach1
+      - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - cockroach-network
+      - microservices-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
 
-  cockroach3:
-    image: cockroachdb/cockroach:latest
-    container_name: crdb-node3
-    hostname: crdb-node3
+  # Servidor Eureka (Service Discovery)
+  eureka-server:
+    build:
+      context: ./ms-eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    hostname: eureka-server
     ports:
-      - "26259:26257"  # SQL
-      - "8082:8080"    # Admin UI
-    volumes:
-      - cockroach3:/cockroach/cockroach-data
-    command: start --insecure --store=node3 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080 --join=crdb-node1:26257,crdb-node2:26257,crdb-node3:26257 --advertise-addr=crdb-node3:26257
-    depends_on:
-      - cockroach1
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
     networks:
-      - cockroach-network
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-  cockroach-init:
-    image: cockroachdb/cockroach:latest
-    container_name: crdb-init
-    command: init --insecure --host=crdb-node1:26257
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./apiGateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    hostname: api-gateway
+    ports:
+      - "8090:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
     depends_on:
-      - cockroach1
-      - cockroach2
-      - cockroach3
+      eureka-server:
+        condition: service_healthy
     networks:
-      - cockroach-network
-    restart: "no"
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-  cockroach-init-dbs:
-    image: cockroachdb/cockroach:latest
-    container_name: crdb-init-dbs
+  # Microservicio de Autenticación
+  ms-autenticacion:
+    build:
+      context: ./ms-autenticacion
+      dockerfile: Dockerfile
+    container_name: ms-autenticacion
+    hostname: ms-autenticacion
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://cockroachdb:26257/libreria?sslmode=disable
     depends_on:
-      - cockroach-init
-    entrypoint: >
-      /bin/bash -c "
-      sleep 10 &&
-      cockroach sql --insecure --host=crdb-node1:26257 -e '
-        CREATE DATABASE IF NOT EXISTS dbpublicaciones;
-        CREATE DATABASE IF NOT EXISTS dbnotificaciones;
-        CREATE DATABASE IF NOT EXISTS dbcatalogo;
-        CREATE DATABASE IF NOT EXISTS bdautenticacion;
-        CREATE DATABASE IF NOT EXISTS dbusuarios;
-      '
-      "
+      eureka-server:
+        condition: service_healthy
+      cockroachdb:
+        condition: service_healthy
     networks:
-      - cockroach-network
-    restart: "no"
+      - microservices-network
 
-volumes:
-  cockroach1:
-  cockroach2:
-  cockroach3:
+  # Microservicio de Usuarios
+  ms-usuarios:
+    build:
+      context: ./usuarios
+      dockerfile: Dockerfile
+    container_name: ms-usuarios
+    hostname: ms-usuarios
+    ports:
+      - "8082:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://cockroachdb:26257/libreria?sslmode=disable
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      cockroachdb:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  # Microservicio de Catálogo
+  ms-catalogo:
+    build:
+      context: ./ms-catalogo
+      dockerfile: Dockerfile
+    container_name: ms-catalogo
+    hostname: ms-catalogo
+    ports:
+      - "8083:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://cockroachdb:26257/libreria?sslmode=disable
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      cockroachdb:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  # Microservicio de Publicaciones
+  ms-publicaciones:
+    build:
+      context: ./publicaciones
+      dockerfile: Dockerfile
+    container_name: ms-publicaciones
+    hostname: ms-publicaciones
+    ports:
+      - "8084:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://cockroachdb:26257/libreria?sslmode=disable
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin123
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      cockroachdb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  # Microservicio de Notificaciones
+  ms-notificaciones:
+    build:
+      context: ./Notificaciones
+      dockerfile: Dockerfile
+    container_name: ms-notificaciones
+    hostname: ms-notificaciones
+    ports:
+      - "8085:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin123
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  # Microservicio de Sincronización
+  ms-sincronizacion:
+    build:
+      context: ./sincronizacion
+      dockerfile: Dockerfile
+    container_name: ms-sincronizacion
+    hostname: ms-sincronizacion
+    ports:
+      - "8086:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://cockroachdb:26257/libreria?sslmode=disable
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin123
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      cockroachdb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
 
 networks:
-  cockroach-network:
+  microservices-network:
     driver: bridge
+
+volumes:
+  cockroach_data:
+  rabbitmq_data:

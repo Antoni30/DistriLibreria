@@ -37,7 +37,7 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/actuator/**"
                         ).permitAll()
-                        .requestMatchers("/autores/**","/libros/**","/papers/**").hasRole("CLIENTE")
+                        .requestMatchers("/autores/**","/libros/**","/papers/**").hasAnyRole("CLIENTE", "ADMINISTRADOR")
                         .anyRequest().authenticated()
                 ) .exceptionHandling(ex -> ex
                         .accessDeniedHandler(customAccessDeniedHandler)
