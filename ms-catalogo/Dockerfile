@@ -1,34 +1,29 @@
-# Usar Eclipse Temurin 21 como imagen base
-FROM eclipse-temurin:21-jdk-jammy
-
-# Información del mantenedor
-LABEL maintainer="ec.edu.espe"
+# Usar Eclipse Temurin 21 con Maven incluido
+FROM maven:3.9.4-eclipse-temurin-21 AS build
 
 # Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de Maven wrapper
-COPY mvnw .
-COPY mvnw.cmd .
-COPY .mvn .mvn
-
 # Copiar archivo pom.xml
 COPY pom.xml .
-
-# Dar permisos de ejecución al wrapper de Maven
-RUN chmod +x mvnw
-
-# Descargar dependencias (esto se cachea si no cambia el pom.xml)
-RUN ./mvnw dependency:go-offline -B
 
 # Copiar código fuente
 COPY src src
 
 # Construir la aplicación
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
+
+# Etapa de runtime
+FROM eclipse-temurin:21-jre
+
+# Crear directorio de trabajo
+WORKDIR /app
+
+# Copiar el WAR construido (no JAR)
+COPY --from=build /app/target/ms-catalogo-0.0.1-SNAPSHOT.war app.jar
 
 # Exponer el puerto del microservicio de catálogo
 EXPOSE 8080
 
 # Ejecutar la aplicación
-CMD ["java", "-jar", "target/ms-catalogo-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "app.jar"]

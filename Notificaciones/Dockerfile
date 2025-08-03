@@ -1,5 +1,23 @@
-# Usar Eclipse Temurin 21 como imagen base
-FROM eclipse-temurin:21-jdk-jammy
+# Usar Maven con Eclipse Temurin 21 para construir
+FROM maven:3.9.4-eclipse-temurin-21 AS build
+
+# Crear directorio de trabajo
+WORKDIR /app
+
+# Copiar archivo pom.xml primero (para cache de dependencias)
+COPY pom.xml .
+
+# Descargar dependencias
+RUN mvn dependency:go-offline -B
+
+# Copiar código fuente
+COPY src src
+
+# Construir la aplicación
+RUN mvn clean package -DskipTests
+
+# Etapa de runtime - usar Eclipse Temurin JRE
+FROM eclipse-temurin:21-jre
 
 # Información del mantenedor
 LABEL maintainer="ec.edu.espe"
@@ -7,28 +25,11 @@ LABEL maintainer="ec.edu.espe"
 # Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de Maven wrapper
-COPY mvnw .
-COPY mvnw.cmd .
-COPY .mvn .mvn
-
-# Copiar archivo pom.xml
-COPY pom.xml .
-
-# Dar permisos de ejecución al wrapper de Maven
-RUN chmod +x mvnw
-
-# Descargar dependencias (esto se cachea si no cambia el pom.xml)
-RUN ./mvnw dependency:go-offline -B
-
-# Copiar código fuente
-COPY src src
-
-# Construir la aplicación
-RUN ./mvnw clean package -DskipTests
+# Copiar el JAR desde la etapa de build
+COPY --from=build /app/target/Notificaciones-0.0.1-SNAPSHOT.jar app.jar
 
 # Exponer el puerto del microservicio de notificaciones
 EXPOSE 8080
 
 # Ejecutar la aplicación
-CMD ["java", "-jar", "target/Notificaciones-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "app.jar"]
