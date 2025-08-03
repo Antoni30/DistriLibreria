@@ -1,5 +1,6 @@
-# Usar OpenJDK 21 como imagen base
-FROM openjdk:21-jdk-slim
+# Usar Eclipse Temurin 21 como imagen base
+
+FROM eclipse-temurin:21-jdk-jammy
 
 # Información del mantenedor
 LABEL maintainer="ec.edu.espe"
