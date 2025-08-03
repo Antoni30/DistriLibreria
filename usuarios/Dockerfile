@@ -1,31 +1,25 @@
-# Usar Maven con Eclipse Temurin 21 para construir
+# Usar Eclipse Temurin 21 con Maven incluido
 FROM maven:3.9.4-eclipse-temurin-21 AS build
 
 # Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar archivo pom.xml primero (para cache de dependencias)
+# Copiar archivo pom.xml
 COPY pom.xml .
-
-# Descargar dependencias con más verbose para debug
-RUN mvn dependency:resolve -B -X || mvn dependency:resolve -B
 
 # Copiar código fuente
 COPY src src
 
-# Construir la aplicación con más información de debug
-RUN mvn clean package -DskipTests -B -X
+# Construir la aplicación
+RUN mvn clean package -DskipTests
 
-# Etapa de runtime - usar Eclipse Temurin JRE
+# Etapa de runtime
 FROM eclipse-temurin:21-jre
-
-# Información del mantenedor
-LABEL maintainer="ec.edu.espe"
 
 # Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar el JAR desde la etapa de build (con nombre correcto basado en pom.xml)
+# Copiar el JAR construido
 COPY --from=build /app/target/ms-usuarios-0.0.1-SNAPSHOT.jar app.jar
 
 # Exponer el puerto del microservicio de usuarios

@@ -25,8 +25,8 @@ LABEL maintainer="ec.edu.espe"
 # Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar el JAR desde la etapa de build
-COPY --from=build /app/target/Notificaciones-0.0.1-SNAPSHOT.jar app.jar
+# Copiar el WAR construido (no JAR)
+COPY --from=build /app/target/Notificaciones-0.0.1-SNAPSHOT.war app.jar
 
 # Exponer el puerto del microservicio de notificaciones
 EXPOSE 8080
