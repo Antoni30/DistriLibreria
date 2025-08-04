@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: distrilibreria-ns
+  labels:
+    name: distrilibreria-ns
+

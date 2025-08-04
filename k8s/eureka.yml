@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eureka-server
+  namespace: distrilibreria
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eureka-server
+  template:
+    metadata:
+      labels:
+        app: eureka-server
+    spec:
+      containers:
+        - name: eureka-server
+          image: antoni30/ms-eureka:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8761
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "docker"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: eureka-server
+  namespace: distrilibreria
+spec:
+  selector:
+    app: eureka-server
+  ports:
+  - protocol: TCP
+    port: 8761
+    targetPort: 8761
+    nodePort: 30003
+  type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: eureka-ingress
+  namespace: distrilibreria
+spec:
+  rules:
+  - host: eureka.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: eureka-server
+            port:
+              number: 8761
+

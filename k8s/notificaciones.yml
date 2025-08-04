@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notificaciones
+  namespace: distrilibreria
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notificaciones
+  template:
+    metadata:
+      labels:
+        app: notificaciones
+    spec:
+      containers:
+        - name: notificaciones
+          image: antoni30/notificaciones:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "docker"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://cockroachdb:26257/dbnotificaciones?sslmode=disable"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "root"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: ""
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: "admin"
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: "admin"
+            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka"
+            - name: JWT_SECRET
+              value: "c9931ae617c133c0dcc897e6e0ccffad2a70a4a119d58c72ae4ee9b94294521a"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: notificaciones
+  namespace: distrilibreria
+spec:
+  selector:
+    app: notificaciones
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+    nodePort: 30008
+  type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: notificaciones-ingress
+  namespace: distrilibreria
+spec:
+  rules:
+  - host: notificaciones.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: notificaciones
+            port:
+              number: 8080
+

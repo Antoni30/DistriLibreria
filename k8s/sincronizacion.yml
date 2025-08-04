@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sincronizacion
+  namespace: distrilibreria
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sincronizacion
+  template:
+    metadata:
+      labels:
+        app: sincronizacion
+    spec:
+      containers:
+        - name: sincronizacion
+          image: antoni30/sincronizacion:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "docker"
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: "admin"
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: "admin"
+            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: sincronizacion
+  namespace: distrilibreria
+spec:
+  selector:
+    app: sincronizacion
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+    nodePort: 30009
+  type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sincronizacion-ingress
+  namespace: distrilibreria
+spec:
+  rules:
+  - host: sincronizacion.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sincronizacion
+            port:
+              number: 8080
+

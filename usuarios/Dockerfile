@@ -2,15 +2,21 @@ FROM openjdk:21-slim as build
 
 WORKDIR /app
 
+# Copiar archivos de Maven
 COPY pom.xml .
 COPY mvnw .
 COPY .mvn .mvn
 
 RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline -B
+
+# Intentar descargar dependencias con reintentos
+RUN ./mvnw dependency:go-offline -B || \
+    ./mvnw dependency:go-offline -B || \
+    ./mvnw dependency:go-offline -B
 
 COPY src src
 
+# Limpiar y construir el proyecto
 RUN ./mvnw clean package -DskipTests
 
 FROM openjdk:21-slim

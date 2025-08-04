@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: usuarios
+  namespace: distrilibreria
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: usuarios
+  template:
+    metadata:
+      labels:
+        app: usuarios
+    spec:
+      containers:
+        - name: usuarios
+          image: antoni30/usuarios:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "docker"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://cockroachdb:26257/dbusuarios?sslmode=disable"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "root"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: ""
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: "admin"
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: "admin"
+            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: usuarios
+  namespace: distrilibreria
+spec:
+  selector:
+    app: usuarios
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+    nodePort: 30005
+  type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: usuarios-ingress
+  namespace: distrilibreria
+spec:
+  rules:
+  - host: usuarios.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: usuarios
+            port:
+              number: 8080
+
