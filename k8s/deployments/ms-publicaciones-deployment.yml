@@ -27,17 +27,16 @@ spec:
           value: "jdbc:postgresql://cockroachdb-service:26257/dbpublicaciones?sslmode=disable"
         - name: SPRING_RABBITMQ_HOST
           value: "rabbitmq-service"
+        - name: SPRING_RABBITMQ_PORT
+          value: "5672"
+        - name: SPRING_RABBITMQ_USERNAME
+          value: "admin"
+        - name: SPRING_RABBITMQ_PASSWORD
+          value: "admin123"
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
+            memory: "128Mi"
+            cpu: "100m"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
-        readinessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
-
+            memory: "256Mi"
+            cpu: "200m"
