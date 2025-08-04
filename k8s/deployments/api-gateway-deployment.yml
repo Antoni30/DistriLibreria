@@ -25,15 +25,8 @@ spec:
           value: "http://eureka-server-service:8761/eureka/"
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
+            memory: "256Mi"
+            cpu: "150m"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
-        readinessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
-
+            memory: "512Mi"
+            cpu: "300m"
