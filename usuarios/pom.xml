@@ -11,6 +11,7 @@
 	<groupId>com.encuentro</groupId>
 	<artifactId>ms-usuarios</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>war</packaging>
 	<name>ms-usuarios</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>
@@ -28,6 +29,7 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<spring-cloud.version>2025.0.0</spring-cloud.version>
 	</properties>
 	<dependencyManagement>

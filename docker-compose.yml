@@ -1,53 +1,43 @@
 version: '3.8'
 
 services:
-  # Base de datos CockroachDB
-  cockroachdb:
-    image: cockroachdb/cockroach:latest
-    container_name: cockroachdb
-    hostname: cockroachdb
+  # CockroachDB Database
+  crocoach:
+    image: antoni30/crocoach
+    container_name: crocoachms
     ports:
-      - "26257:26257"  # SQL
-      - "8080:8080"    # Admin UI
-    volumes:
-      - cockroach_data:/cockroach/cockroach-data
-    command: start-single-node --insecure --store=node1 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      - "26257:26257"
+      - "8080:8080"
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health?ready=1"]
       interval: 30s
       timeout: 10s
       retries: 5
 
-  # RabbitMQ para mensajería
+  # RabbitMQ Message Broker
   rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    hostname: rabbitmq
+    image: antoni30/rabittmq
+    container_name: rabbitmqms
     ports:
-      - "5672:5672"    # AMQP
-      - "15672:15672"  # Management UI
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin123
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      RABBITMQ_DEFAULT_PASS: admin
     networks:
       - microservices-network
     healthcheck:
-      test: rabbitmq-diagnostics -q ping
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
-      timeout: 30s
-      retries: 3
+      timeout: 10s
+      retries: 5
 
-  # Servidor Eureka (Service Discovery)
+  # Eureka Service Discovery
   eureka-server:
-    build:
-      context: ./ms-eureka-server
-      dockerfile: Dockerfile
-    container_name: eureka-server
-    hostname: eureka-server
+    image: antoni30/ms-eureka
+    container_name: eureka-serverms
     ports:
       - "8761:8761"
     environment:
@@ -60,174 +50,199 @@ services:
       timeout: 10s
       retries: 5
 
-  # API Gateway
-  api-gateway:
-    build:
-      context: ./apiGateway
-      dockerfile: Dockerfile
-    container_name: api-gateway
-    hostname: api-gateway
-    ports:
-      - "8090:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
-    depends_on:
-      eureka-server:
-        condition: service_healthy
-    networks:
-      - microservices-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  # Microservicio de Autenticación
+  # Authentication Microservice
   ms-autenticacion:
-    build:
-      context: ./ms-autenticacion
-      dockerfile: Dockerfile
-    container_name: ms-autenticacion
-    hostname: ms-autenticacion
+    image: antoni30/ms-autenticacion
+    container_name: ms-autenticacionms
     ports:
       - "8081:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://cockroachdb:26257/libreria?sslmode=disable
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://crocoach:26257/bdautenticacion?sslmode=disable
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - JWT_SECRET=c9931ae617c133c0dcc897e6e0ccffad2a70a4a119d58c72ae4ee9b94294521a
     depends_on:
-      eureka-server:
+      crocoach:
         condition: service_healthy
-      cockroachdb:
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
     networks:
       - microservices-network
+    restart: unless-stopped
 
-  # Microservicio de Usuarios
-  ms-usuarios:
-    build:
-      context: ./usuarios
-      dockerfile: Dockerfile
-    container_name: ms-usuarios
-    hostname: ms-usuarios
+  # Users Microservice
+  usuarios:
+    image: antoni30/usuarios
+    container_name: usuariosms
     ports:
       - "8082:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://cockroachdb:26257/libreria?sslmode=disable
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://crocoach:26257/dbusuarios?sslmode=disable
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
     depends_on:
-      eureka-server:
+      crocoach:
         condition: service_healthy
-      cockroachdb:
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
     networks:
       - microservices-network
+    restart: unless-stopped
 
-  # Microservicio de Catálogo
+  # Catalog Microservice
   ms-catalogo:
-    build:
-      context: ./ms-catalogo
-      dockerfile: Dockerfile
-    container_name: ms-catalogo
-    hostname: ms-catalogo
+    image: antoni30/ms-catalogo
+    container_name: ms-catalogoms
     ports:
       - "8083:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://cockroachdb:26257/libreria?sslmode=disable
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://crocoach:26257/dbcatalogo?sslmode=disable
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - JWT_SECRET=c9931ae617c133c0dcc897e6e0ccffad2a70a4a119d58c72ae4ee9b94294521a
     depends_on:
-      eureka-server:
+      crocoach:
         condition: service_healthy
-      cockroachdb:
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
     networks:
       - microservices-network
+    restart: unless-stopped
 
-  # Microservicio de Publicaciones
-  ms-publicaciones:
-    build:
-      context: ./publicaciones
-      dockerfile: Dockerfile
-    container_name: ms-publicaciones
-    hostname: ms-publicaciones
+  # Publications Microservice
+  publicaciones:
+    image: antoni30/publicaciones
+    container_name: publicacionesms
     ports:
       - "8084:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://cockroachdb:26257/libreria?sslmode=disable
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://crocoach:26257/dbpublicaciones?sslmode=disable
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=admin
-      - SPRING_RABBITMQ_PASSWORD=admin123
+      - SPRING_RABBITMQ_PASSWORD=admin
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - JWT_SECRET=c9931ae617c133c0dcc897e6e0ccffad2a70a4a119d58c72ae4ee9b94294521a
     depends_on:
-      eureka-server:
-        condition: service_healthy
-      cockroachdb:
+      crocoach:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      eureka-server:
+        condition: service_healthy
     networks:
       - microservices-network
+    restart: unless-stopped
 
-  # Microservicio de Notificaciones
-  ms-notificaciones:
-    build:
-      context: ./Notificaciones
-      dockerfile: Dockerfile
-    container_name: ms-notificaciones
-    hostname: ms-notificaciones
+  # Notifications Microservice
+  notificaciones:
+    image: antoni30/notificaciones
+    container_name: notificacionesms
     ports:
       - "8085:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://crocoach:26257/dbnotificaciones?sslmode=disable
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=admin
-      - SPRING_RABBITMQ_PASSWORD=admin123
+      - SPRING_RABBITMQ_PASSWORD=admin
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - JWT_SECRET=c9931ae617c133c0dcc897e6e0ccffad2a70a4a119d58c72ae4ee9b94294521a
     depends_on:
-      eureka-server:
+      crocoach:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      eureka-server:
+        condition: service_healthy
     networks:
       - microservices-network
+    restart: unless-stopped
 
-  # Microservicio de Sincronización
-  ms-sincronizacion:
-    build:
-      context: ./sincronizacion
-      dockerfile: Dockerfile
-    container_name: ms-sincronizacion
-    hostname: ms-sincronizacion
+  # Synchronization Microservice
+  sincronizacion:
+    image: antoni30/sincronizacion
+    container_name: sincronizacion
     ports:
       - "8086:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://cockroachdb:26257/libreria?sslmode=disable
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=admin
-      - SPRING_RABBITMQ_PASSWORD=admin123
+      - SPRING_RABBITMQ_PASSWORD=admin
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
     depends_on:
-      eureka-server:
-        condition: service_healthy
-      cockroachdb:
-        condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
     networks:
       - microservices-network
+    restart: unless-stopped
+
+  # API Gateway
+  apigateway:
+    image: antoni30/apigateway
+    container_name: apigateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      ms-autenticacion:
+        condition: service_started
+      usuarios:
+        condition: service_started
+      ms-catalogo:
+        condition: service_started
+      publicaciones:
+        condition: service_started
+      notificaciones:
+        condition: service_started
+      sincronizacion:
+        condition: service_started
+    networks:
+      - microservices-network
+    restart: unless-stopped
 
 networks:
   microservices-network:
     driver: bridge
 
 volumes:
-  cockroach_data:
-  rabbitmq_data:
+  crocoach-data:
+  rabbitmq-data:

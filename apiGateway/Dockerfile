@@ -1,34 +1,23 @@
-# Usar OpenJDK 21 como imagen base
-FROM openjdk:21-jdk-slim
+FROM openjdk:21-slim AS build
 
-# Información del mantenedor
-LABEL maintainer="ec.edu.espe"
-
-# Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de Maven wrapper
-COPY mvnw .
-COPY mvnw.cmd .
-COPY .mvn .mvn
-
-# Copiar archivo pom.xml
 COPY pom.xml .
 
-# Dar permisos de ejecución al wrapper de Maven
-RUN chmod +x mvnw
+RUN apt-get update && apt-get install -y maven
 
-# Descargar dependencias (esto se cachea si no cambia el pom.xml)
-RUN ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -B
 
-# Copiar código fuente
 COPY src src
 
-# Construir la aplicación
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
-# Exponer el puerto del API Gateway
+FROM openjdk:21-slim
+
+WORKDIR /app
+
+COPY --from=build /app/target/*.war app.war
+
 EXPOSE 8080
 
-# Ejecutar la aplicación
-CMD ["java", "-jar", "target/apiGateway-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "app.war"]
