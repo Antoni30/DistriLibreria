@@ -16,6 +16,7 @@ spec:
       containers:
       - name: api-gateway
         image: milenamaldonado/api-gateway:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:
@@ -26,7 +27,19 @@ spec:
         resources:
           requests:
             memory: "256Mi"
-            cpu: "150m"
+            cpu: "100m"
           limits:
             memory: "512Mi"
-            cpu: "300m"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 15
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 180
+          periodSeconds: 30

@@ -15,29 +15,22 @@ spec:
     spec:
       containers:
       - name: rabbitmq
-        image: rabbitmq:3.12-alpine
+        image: rabbitmq:3-management
+        imagePullPolicy: Always
         ports:
         - containerPort: 5672
           name: amqp
+        - containerPort: 15672
+          name: management
         env:
         - name: RABBITMQ_DEFAULT_USER
           value: "admin"
         - name: RABBITMQ_DEFAULT_PASS
-          value: "admin123"
+          value: "admin"
         resources:
           requests:
-            memory: "128Mi"
+            memory: "256Mi"
             cpu: "100m"
           limits:
-            memory: "256Mi"
-            cpu: "200m"
-        readinessProbe:
-          tcpSocket:
-            port: 5672
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        livenessProbe:
-          tcpSocket:
-            port: 5672
-          initialDelaySeconds: 60
-          periodSeconds: 30
+            memory: "512Mi"
+            cpu: "300m"
