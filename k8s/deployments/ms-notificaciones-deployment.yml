@@ -4,7 +4,7 @@ metadata:
   name: ms-notificaciones
   namespace: distri-libreria
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: ms-notificaciones
