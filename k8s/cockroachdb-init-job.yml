@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cockroachdb-init-dbs
+  namespace: distri-libreria
+spec:
+  template:
+    spec:
+      containers:
+      - name: init-dbs
+        image: cockroachdb/cockroach:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          echo "Esperando que CockroachDB esté listo..."
+          sleep 30
+          
+          echo "Creando bases de datos..."
+          /cockroach/cockroach sql --insecure --host=cockroachdb-service:26257 --execute="
+          CREATE DATABASE IF NOT EXISTS dbpublicaciones;
+          CREATE DATABASE IF NOT EXISTS dbnotificaciones;
+          CREATE DATABASE IF NOT EXISTS dbcatalogo;
+          CREATE DATABASE IF NOT EXISTS bdautenticacion;
+          CREATE DATABASE IF NOT EXISTS dbusuarios;
+          CREATE DATABASE IF NOT EXISTS dbsincronizacion;
+          "
+          
+          echo "Bases de datos creadas exitosamente"
+      restartPolicy: OnFailure
+  backoffLimit: 3
+
