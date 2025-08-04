@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-autenticacion
+  namespace: distri-libreria
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ms-autenticacion
+  template:
+    metadata:
+      labels:
+        app: ms-autenticacion
+    spec:
+      containers:
+      - name: ms-autenticacion
+        image: milenamaldonado/ms-autenticacion:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+          value: "http://eureka-server-service:8761/eureka/"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://cockroachdb-service:26257/autenticacion?sslmode=disable"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+

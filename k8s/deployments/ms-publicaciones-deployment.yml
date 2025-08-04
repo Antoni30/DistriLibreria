@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-publicaciones
+  namespace: distri-libreria
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ms-publicaciones
+  template:
+    metadata:
+      labels:
+        app: ms-publicaciones
+    spec:
+      containers:
+      - name: ms-publicaciones
+        image: milenamaldonado/ms-publicaciones:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+          value: "http://eureka-server-service:8761/eureka/"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://cockroachdb-service:26257/dbpublicaciones?sslmode=disable"
+        - name: SPRING_RABBITMQ_HOST
+          value: "rabbitmq-service"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+

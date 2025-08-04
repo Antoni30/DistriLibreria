@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: distri-libreria
+  labels:
+    name: distri-libreria
+    project: microservicios-libreria
+

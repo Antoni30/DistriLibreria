@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cockroachdb
+  namespace: distri-libreria
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cockroachdb
+  template:
+    metadata:
+      labels:
+        app: cockroachdb
+    spec:
+      containers:
+      - name: cockroachdb
+        image: cockroachdb/cockroach:latest
+        ports:
+        - containerPort: 26257
+          name: sql
+        - containerPort: 8080
+          name: admin-ui
+        command:
+        - /cockroach/cockroach
+        - start-single-node
+        - --insecure
+        - --store=node1
+        - --listen-addr=0.0.0.0:26257
+        - --http-addr=0.0.0.0:8080
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: cockroach-data
+          mountPath: /cockroach/cockroach-data
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+      volumes:
+      - name: cockroach-data
+        emptyDir: {}
+

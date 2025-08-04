@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cockroachdb-service
+  namespace: distri-libreria
+spec:
+  selector:
+    app: cockroachdb
+  ports:
+  - port: 26257
+    targetPort: 26257
+    protocol: TCP
+    name: sql
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: admin-ui
+  type: ClusterIP
+

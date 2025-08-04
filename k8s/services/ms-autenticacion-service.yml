@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ms-autenticacion-service
+  namespace: distri-libreria
+spec:
+  selector:
+    app: ms-autenticacion
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
