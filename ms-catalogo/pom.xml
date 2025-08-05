@@ -14,7 +14,7 @@
     <groupId>ec.edu.espe</groupId>
     <artifactId>ms-catalogo</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
     <name>ms-catalogo</name>
     <description>Microservicio del catálogo</description>
 
@@ -77,12 +77,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- WAR deployment (Tomcat provided) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-tomcat</artifactId>
-            <scope>provided</scope>
-        </dependency>
 
         <!-- Testing -->
         <dependency>

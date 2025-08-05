@@ -1,24 +1,28 @@
-FROM openjdk:21-slim as build
+# Etapa 1: Compilación
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
-COPY pom.xml .
-COPY mvnw .
-COPY .mvn .mvn
+# Copiar todo el proyecto
+COPY . .
 
-RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline -B
+# Compilar el proyecto sin ejecutar tests
+RUN mvn clean package -DskipTests
 
-COPY src src
+# Etapa 2: Imagen final
+FROM eclipse-temurin:21-jdk-alpine
 
-RUN ./mvnw clean package -DskipTests
+# Crear un usuario no root por seguridad
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
 
-FROM openjdk:21-slim
+WORKDIR /home/spring
 
-WORKDIR /app
+# Copiar el JAR desde la etapa de construcción
+COPY --from=builder /app/target/ms-eureka-server-0.0.1-SNAPSHOT.jar app.jar
 
-COPY --from=build /app/target/*.war app.war
-
+# Exponer el puerto donde corre Eureka (8761)
 EXPOSE 8761
 
-ENTRYPOINT ["java", "-jar", "app.war"]
+# Ejecutar el microservicio
+ENTRYPOINT ["java", "-jar", "app.jar"]

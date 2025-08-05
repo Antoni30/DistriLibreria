@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-usuarios
+  namespace: distribuidasms
+  labels:
+    app: ms-usuarios
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ms-usuarios
+  template:
+    metadata:
+      labels:
+        app: ms-usuarios
+    spec:
+      containers:
+        - name: ms-usuarios
+          image: tonir30/ms-user:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_APPLICATION_NAME
+              value: ms-usuarios
+            - name: SERVER_PORT
+              value: "8085"
+            - name: JWT_SECRET
+              value: c9931ae617c133c0dcc897e6e0ccffad2a70a4a119d58c72ae4ee9b94294521a
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/bd_distri
+            - name: SPRING_DATASOURCE_USERNAME
+              value: admin
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: adminadmin123
+            - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+              value: org.postgresql.Driver
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
+              value: org.hibernate.dialect.PostgreSQLDialect
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: admin
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: admin
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka:8761/eureka

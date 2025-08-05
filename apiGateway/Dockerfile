@@ -1,23 +1,22 @@
-FROM openjdk:21-slim AS build
+# Etapa 1: Build con Maven
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
-COPY pom.xml .
-
-RUN apt-get update && apt-get install -y maven
-
-RUN mvn dependency:go-offline -B
-
-COPY src src
+COPY . .
 
 RUN mvn clean package -DskipTests
 
-FROM openjdk:21-slim
+# Etapa 2: Imagen final
+FROM eclipse-temurin:21-jdk-alpine
 
-WORKDIR /app
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
 
-COPY --from=build /app/target/*.war app.war
+WORKDIR /home/spring
 
-EXPOSE 8080
+COPY --from=builder /app/target/apiGateway-0.0.1-SNAPSHOT.jar app.jar
 
-ENTRYPOINT ["java", "-jar", "app.war"]
+EXPOSE 8000
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

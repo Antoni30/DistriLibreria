@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ms-publicaciones
+  namespace: distribuidasms
+  labels:
+    app: ms-publicaciones
+spec:
+  selector:
+    app: ms-publicaciones
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

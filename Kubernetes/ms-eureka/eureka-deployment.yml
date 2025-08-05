@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-eureka-server
+  namespace: distribuidasms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ms-eureka-server
+  template:
+    metadata:
+      labels:
+        app: ms-eureka-server
+    spec:
+      containers:
+        - name: eureka
+          image: tonir30/ms-eureka-server:latest
+          ports:
+            - containerPort: 8761
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx512m"

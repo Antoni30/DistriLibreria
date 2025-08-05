@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-publicaciones
+  namespace: distribuidasms
+  labels:
+    app: ms-publicaciones
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ms-publicaciones
+  template:
+    metadata:
+      labels:
+        app: ms-publicaciones
+    spec:
+      containers:
+        - name: ms-publicaciones
+          image: tonir30/ms-publi:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_APPLICATION_NAME
+              value: publicaciones
+            - name: SERVER_PORT
+              value: "8082"
+            - name: JWT_SECRET
+              value: c9931ae617c133c0dcc897e6e0ccffad2a70a4a119d58c72ae4ee9b94294521a
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/bd_distri
+            - name: SPRING_DATASOURCE_USERNAME
+              value: admin
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: adminadmin123
+            - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+              value: org.postgresql.Driver
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: update
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
+              value: org.hibernate.dialect.PostgreSQLDialect
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_SHOW_SQL
+              value: "true"
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL
+              value: "true"
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_USE_SQL_COMMENTS
+              value: "true"
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: admin
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: admin
+            - name: INTERVALO
+              value: "1000"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka:8761/eureka
+            - name: EUREKA_CLIENT_FETCH_REGISTRY
+              value: "true"
+            - name: EUREKA_CLIENT_REGISTER_WITH_EUREKA
+              value: "true"
+            - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
+              value: "true"
+            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+              value: health,info,metrics

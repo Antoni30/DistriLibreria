@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-autenticacion
+  namespace: distribuidasms
+  labels:
+    app: ms-autenticacion
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ms-autenticacion
+  template:
+    metadata:
+      labels:
+        app: ms-autenticacion
+    spec:
+      containers:
+        - name: ms-autenticacion
+          image: tonir30/ms-auth:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080

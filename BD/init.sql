@@ -1,1 +1,1 @@
-CREATE DATABASE microservicios;
+CREATE DATABASE bd_Distri;

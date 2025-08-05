@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: distribuidasms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: tonir30/api-gateway:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx512m"

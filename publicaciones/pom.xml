@@ -13,7 +13,7 @@
 	<groupId>ec.edu.espe</groupId>
 	<artifactId>publicaciones</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 	<name>publicaciones</name>
 	<description>Demo project for Spring Boot</description>
 
@@ -133,11 +133,6 @@
 			<artifactId>jjwt-jackson</artifactId> <!-- o gson -->
 			<version>0.11.5</version>
 			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-tomcat</artifactId>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

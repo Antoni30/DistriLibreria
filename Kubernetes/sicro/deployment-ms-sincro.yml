@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-sincro
+  namespace: distribuidasms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ms-sincro
+  template:
+    metadata:
+      labels:
+        app: ms-sincro
+    spec:
+      containers:
+        - name: ms-sincro
+          image: tonir30/ms-sincro:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_APPLICATION_NAME
+              value: "sincronizacion"
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: "admin"
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: "admin"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://eureka:8761/eureka"
+            - name: EUREKA_CLIENT_FETCH_REGISTRY
+              value: "true"
+            - name: EUREKA_CLIENT_REGISTER_WITH_EUREKA
+              value: "true"
+            - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
+              value: "true"
+            - name: INTERVALO
+              value: "1000"
+            - name: SERVER_PORT
+              value: "0"
